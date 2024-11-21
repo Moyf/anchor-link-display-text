@@ -10,16 +10,31 @@ const DEFAULT_SETTINGS: MyPluginSettings = {
 	mySetting: 'default'
 }
 
-export default class MyPlugin extends Plugin {
+export default class ProfileBuilder extends Plugin {
 	settings: MyPluginSettings;
 
 	async onload() {
 		await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('square-user-round', 'Get Profile', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('square-user-round', 'Get Profile', async (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+			const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			if (activeView) { // if a file is opened on screen
+				const editor = activeView.editor;
+				const selectedText = editor.getSelection(); // get the text selected in the editor
+				if (selectedText.length === 0) {
+					new Notice('No text selected');
+					return;
+				} else {
+					new Notice(`Getting profile information for ${selectedText}`);
+					const profileInfo = await this.getProfileInfo(selectedText);
+					editor.replaceRange(profileInfo, editor.getCursor());
+					new Notice('Profile information inserted');
+				}
+			} else {
+				new Notice('No file opened');
+			}
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -29,6 +44,7 @@ export default class MyPlugin extends Plugin {
 			name: 'Get and insert profile information',
 			editorCallback: (editor: Editor) => {
 				const selection = editor.getSelection();
+				editor.replaceRange('Some text', editor.getCursor());
 				// Do something with the selection
 			},
 		});
@@ -57,6 +73,35 @@ export default class MyPlugin extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
+	async getProfileInfo(userSelection: string) {
+		const body = {
+			"model":"llama-3.1-sonar-small-128k-online",
+			"messages":
+			[
+				{
+					"role":"system",
+					"content":"Find the academic and work experience of the given person."
+				},
+				{
+					"role":"user",
+					"content":userSelection
+				}
+			]
+		}
+		const options = {
+			method: 'POST',
+			headers: {Authorization: `Bearer ${process.env.PPLX_API_KEY}`, 'Content-Type': 'application/json'},
+			body: JSON.stringify(body)
+		  };
+		try {
+			const response = await fetch('https://api.perplexity.ai/chat/completions', options);
+			const data = await response.json();
+			return data.choices[0].message.content;
+		} catch (err) {
+			return err.message;
+		}
+	} 
 }
 
 class SampleModal extends Modal {
@@ -76,9 +121,9 @@ class SampleModal extends Modal {
 }
 
 class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+	plugin: ProfileBuilder;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: ProfileBuilder) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
