@@ -75,19 +75,21 @@ export default class ProfileBuilder extends Plugin {
 	}
 
 	async getProfileInfo(userSelection: string) {
+		// Try changing this to a google search for the linkedin, downloading the page, using an AI to parse the information?
 		const body = {
-			"model":"llama-3.1-sonar-small-128k-online",
+			"model":"llama-3.1-sonar-huge-128k-online",
 			"messages":
 			[
 				{
 					"role":"system",
-					"content":"Find the academic and work experience of the given person."
+					"content":"Find the academic and work experience of the given person. Output the information in this structured, Markdown format: ##Background###Work###Education. Each section should just be a list of experiences noting the company and position for work or degree and field of study for education. At the end of each item should be the start and end date. If the end date is not available, just put the start date. If the start date is not available, just put the end date. If both are not available, just put 'N/A'. After these two sections, you may include anything else you find about the person."
 				},
 				{
 					"role":"user",
-					"content":userSelection
+					"content":`Tell me about ${userSelection}`
 				}
-			]
+			],
+			"search_domain_filer": ["linkedin.com"]
 		}
 		const options = {
 			method: 'POST',
