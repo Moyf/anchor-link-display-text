@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 // Remember to rename these classes and interfaces!
 
@@ -86,6 +86,9 @@ class HeaderDisplayTextSettingTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				});
 			})
+		new Setting(containerEl)
+			.setName('Notifications')
+			.setDesc('Have a notification pop up whenever a link is automatically changed.')
 			.addToggle(toggle => {
 				toggle.setValue(this.plugin.settings.includeNotice);
 				toggle.onChange(value => {
