@@ -1,15 +1,17 @@
 import { App, Editor, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
-// Remember to rename these classes and interfaces!
-
 interface HeaderDisplayTextSettings {
 	displayTextFormat: string;
 	includeNotice: boolean;
+	noticeText: string;
+	sep : string;
 }
 
 const DEFAULT_SETTINGS: HeaderDisplayTextSettings = {
 	displayTextFormat: 'headerOnly',
-	includeNotice: false
+	includeNotice: false,
+	noticeText: 'Link changed!'
+	sep: ' '
 }
 
 export default class HeaderDisplayText extends Plugin {
@@ -18,28 +20,29 @@ export default class HeaderDisplayText extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new HeaderDisplayTextSettingTab(this.app, this));
 
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
+		// look for header link creation
 		this.registerEvent(
 			this.app.workspace.on('editor-change', (editor: Editor) => {
 				// get what is being typed
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
-				// Wikilink format
 				// match links to other note headings WITHOUT an already defined display text
-				const headerLinkPattern = /\[\[([^\]]+)#([^|]+)\]\]/;
+				const headerLinkPattern = /\[\[([^\]]+#[^|]+)\]\]/;
 				const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 				if (match) {
-					const noteName = match[1];
-					const heading = match[2];
+					// handle multiple subheadings
+					const headings = match[1].split('#')
+					let displayText = headings[1]
+					for (let i = 2; i < headings.length; i++) {
+						displayText += this.settings.sep + headings[i]
+					}
 					const startIndex = (match.index ?? 0) + match[0].length - 2;
 					if (this.settings.displayTextFormat === 'headerOnly') {
-						editor.replaceRange(`|${heading}`, {line: cursor.line, ch: startIndex}, undefined, 'headerAliases')
+						editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText')
 					} else if (this.settings.displayTextFormat === 'withNoteName'){
-						editor.replaceRange(`|${noteName} ${heading}`, {line: cursor.line, ch: startIndex}, undefined, 'headerAliases')
+						editor.replaceRange(`|${headings[0]}${this.settings.sep}${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText')
 					}
 					if (this.settings.includeNotice) {
 						new Notice ('Link changed!')
@@ -80,7 +83,6 @@ class HeaderDisplayTextSettingTab extends PluginSettingTab {
 			.addDropdown(dropdown => {
 				dropdown.addOption('headerOnly', 'Header Only');
 				dropdown.addOption('withNoteName', 'Note Name and Header');
-				dropdown.setValue('headerOnly');
 				dropdown.onChange(value => {
 					this.plugin.settings.displayTextFormat = value;
 					this.plugin.saveSettings();
