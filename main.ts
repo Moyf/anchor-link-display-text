@@ -3,11 +3,13 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 // Remember to rename these classes and interfaces!
 
 interface HeaderDisplayTextSettings {
-	mySetting: string;
+	displayTextFormat: string;
+	includeNotice: boolean;
 }
 
 const DEFAULT_SETTINGS: HeaderDisplayTextSettings = {
-	mySetting: 'default'
+	displayTextFormat: 'headerOnly',
+	includeNotice: false
 }
 
 export default class HeaderDisplayText extends Plugin {
@@ -33,10 +35,15 @@ export default class HeaderDisplayText extends Plugin {
 				if (match) {
 					const noteName = match[1];
 					const heading = match[2];
-					console.log(noteName, heading);
 					const startIndex = (match.index ?? 0) + match[0].length - 2;
-					editor.replaceRange(`|${heading}`, {line: cursor.line, ch: startIndex}, undefined, 'headerAliases')
-					new Notice ('Link changed!')
+					if (this.settings.displayTextFormat === 'headerOnly') {
+						editor.replaceRange(`|${heading}`, {line: cursor.line, ch: startIndex}, undefined, 'headerAliases')
+					} else if (this.settings.displayTextFormat === 'withNoteName'){
+						editor.replaceRange(`|${noteName} ${heading}`, {line: cursor.line, ch: startIndex}, undefined, 'headerAliases')
+					}
+					if (this.settings.includeNotice) {
+						new Notice ('Link changed!')
+					}
 				}
 			})
 		);
@@ -66,18 +73,25 @@ class HeaderDisplayTextSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const {containerEl} = this;
-
 		containerEl.empty();
-
 		new Setting(containerEl)
 			.setName('Display Text Format')
-			.setDesc('Change the format of the display text.')
-			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
-				.onChange(async (value) => {
-					this.plugin.settings.mySetting = value;
-					await this.plugin.saveSettings();
-				}));
+			.setDesc('Change the format of the auto populated display text.')
+			.addDropdown(dropdown => {
+				dropdown.addOption('headerOnly', 'Header Only');
+				dropdown.addOption('withNoteName', 'Note Name and Header');
+				dropdown.setValue('headerOnly');
+				dropdown.onChange(value => {
+					this.plugin.settings.displayTextFormat = value;
+					this.plugin.saveSettings();
+				});
+			})
+			.addToggle(toggle => {
+				toggle.setValue(this.plugin.settings.includeNotice);
+				toggle.onChange(value => {
+					this.plugin.settings.includeNotice = value;
+					this.plugin.saveSettings();
+				});
+			})
 	}
 }
