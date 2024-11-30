@@ -92,11 +92,12 @@ class HeaderDisplayTextSettingTab extends PluginSettingTab {
 		containerEl.createEl('h2', {text: 'Link display text'})
 		new Setting(containerEl)
 			.setName('Include note name')
-			.setName('Include the title of the note in the display text.')
+			.setDesc('Include the title of the note in the display text.')
 			.addDropdown(dropdown => {
 				dropdown.addOption('headersOnly', 'Don\'t include note name');
 				dropdown.addOption('noteNameFirst', 'Note name and then heading(s)');
 				dropdown.addOption('noteNameLast', 'Heading(s) and then note name');
+				dropdown.setValue(this.plugin.settings.includeNoteName);
 				dropdown.onChange(value => {
 					this.plugin.settings.includeNoteName = value;
 					this.plugin.saveSettings();
@@ -109,6 +110,7 @@ class HeaderDisplayTextSettingTab extends PluginSettingTab {
 				dropdown.addOption('allHeaders', 'All linked headings');
 				dropdown.addOption('lastHeader', 'Last heading only');
 				dropdown.addOption('firstHeader', 'First heading only');
+				dropdown.setValue(this.plugin.settings.whichHeadings);
 				dropdown.onChange(value => {
 					this.plugin.settings.whichHeadings = value;
 					this.plugin.saveSettings();
