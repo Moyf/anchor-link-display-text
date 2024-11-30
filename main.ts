@@ -1,16 +1,18 @@
 import { App, Editor, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 interface HeaderDisplayTextSettings {
-	displayTextFormat: string;
+	includeNoteName : string;
+	whichHeadings: string;
 	includeNotice: boolean;
 	noticeText: string;
 	sep : string;
 }
 
 const DEFAULT_SETTINGS: HeaderDisplayTextSettings = {
-	displayTextFormat: 'headerOnly',
+	includeNoteName: 'headersOnly',
+	whichHeadings: 'allHeaders',
 	includeNotice: false,
-	noticeText: 'Link changed!'
+	noticeText: 'Link changed!',
 	sep: ' '
 }
 
@@ -34,18 +36,27 @@ export default class HeaderDisplayText extends Plugin {
 				if (match) {
 					// handle multiple subheadings
 					const headings = match[1].split('#')
-					let displayText = headings[1]
-					for (let i = 2; i < headings.length; i++) {
-						displayText += this.settings.sep + headings[i]
+					let displayText = ''
+					if (this.settings.whichHeadings === 'lastHeader') {
+						displayText = headings[headings.length - 1];
+					} else {
+						displayText = headings[1];
+						if (this.settings.whichHeadings === 'allHeaders') {
+							for (let i = 2; i < headings.length; i++) {
+								displayText += this.settings.sep + headings[i];
+							}
+						}
 					}
 					const startIndex = (match.index ?? 0) + match[0].length - 2;
-					if (this.settings.displayTextFormat === 'headerOnly') {
-						editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText')
-					} else if (this.settings.displayTextFormat === 'withNoteName'){
-						editor.replaceRange(`|${headings[0]}${this.settings.sep}${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText')
+					if (this.settings.includeNoteName === 'headersOnly') {
+						editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
+					} else if (this.settings.includeNoteName === 'noteNameFirst') {
+						editor.replaceRange(`|${headings[0]}${this.settings.sep}${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
+					} else if (this.settings.includeNoteName === 'noteNameLast') {
+						editor.replaceRange(`|${displayText}${this.settings.sep}${headings[0]}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
 					}
 					if (this.settings.includeNotice) {
-						new Notice ('Link changed!')
+						new Notice (this.settings.noticeText)
 					}
 				}
 			})
@@ -77,26 +88,63 @@ class HeaderDisplayTextSettingTab extends PluginSettingTab {
 	display(): void {
 		const {containerEl} = this;
 		containerEl.empty();
+
+		containerEl.createEl('h2', {text: 'Link display text'})
 		new Setting(containerEl)
-			.setName('Display Text Format')
-			.setDesc('Change the format of the auto populated display text.')
+			.setName('Include note name')
+			.setName('Include the title of the note in the display text.')
 			.addDropdown(dropdown => {
-				dropdown.addOption('headerOnly', 'Header Only');
-				dropdown.addOption('withNoteName', 'Note Name and Header');
+				dropdown.addOption('headersOnly', 'Don\'t include note name');
+				dropdown.addOption('noteNameFirst', 'Note name and then heading(s)');
+				dropdown.addOption('noteNameLast', 'Heading(s) and then note name');
 				dropdown.onChange(value => {
-					this.plugin.settings.displayTextFormat = value;
+					this.plugin.settings.includeNoteName = value;
 					this.plugin.saveSettings();
 				});
-			})
+			});
 		new Setting(containerEl)
-			.setName('Notifications')
-			.setDesc('Have a notification pop up whenever a link is automatically changed.')
+			.setName('Headings to include')
+			.setDesc('Change which headings and subheadings are in the display text.')
+			.addDropdown(dropdown => {
+				dropdown.addOption('allHeaders', 'All linked headings');
+				dropdown.addOption('lastHeader', 'Last heading only');
+				dropdown.addOption('firstHeader', 'First heading only');
+				dropdown.onChange(value => {
+					this.plugin.settings.whichHeadings = value;
+					this.plugin.saveSettings();
+				});
+			});
+		new Setting(containerEl)
+			.setName('Set seperators')
+			.setDesc('Choose what to insert between headings, instead of #. Ex: , , ->, :, etc.')
+			.addText(text => {
+				text.setValue(this.plugin.settings.sep);
+				text.onChange(value => {
+					this.plugin.settings.sep = value;
+					this.plugin.saveSettings();
+				});
+			});
+
+		containerEl.createEl('h2', {text: 'Notifications'})
+		new Setting(containerEl)
+			.setName('Enable notifications')
+			.setDesc('Have a notice pop up whenever a link is automatically changed.')
 			.addToggle(toggle => {
 				toggle.setValue(this.plugin.settings.includeNotice);
 				toggle.onChange(value => {
 					this.plugin.settings.includeNotice = value;
 					this.plugin.saveSettings();
 				});
-			})
+			});
+		new Setting(containerEl)
+			.setName('Notification text')
+			.setDesc('Set the text to appear in the notification.')
+			.addText(text => {
+				text.setValue(this.plugin.settings.noticeText);
+				text.onChange(value => {
+					this.plugin.settings.noticeText = value;
+					this.plugin.saveSettings();
+				});
+			});
 	}
 }
