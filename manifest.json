@@ -1,7 +1,7 @@
 {
 	"id": "header-display-text",
 	"name": "Header Display Text",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"minAppVersion": "0.15.0",
 	"description": "Automatically uses linked headers as the display text for the link.",
 	"author": "Robert Arsenault",
