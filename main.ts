@@ -30,7 +30,7 @@ export default class AnchorDisplayText extends Plugin {
 				// get what is being typed
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
-				// match links to other note headings WITHOUT an already defined display text
+				// match links to other anchor links WITHOUT an already defined display text
 				const headerLinkPattern = /\[\[([^\]]+#[^|]+)\]\]/;
 				const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 				if (match) {
@@ -89,7 +89,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 		const {containerEl} = this;
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Link display text'})
+		new Setting(containerEl).setName('Display text format').setHeading();
 		new Setting(containerEl)
 			.setName('Include note name')
 			.setDesc('Include the title of the note in the display text.')
@@ -104,7 +104,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 				});
 			});
 		new Setting(containerEl)
-			.setName('Headings to include')
+			.setName('Include subheadings')
 			.setDesc('Change which headings and subheadings are in the display text.')
 			.addDropdown(dropdown => {
 				dropdown.addOption('allHeaders', 'All linked headings');
@@ -117,8 +117,8 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 				});
 			});
 		new Setting(containerEl)
-			.setName('Set seperators')
-			.setDesc('Choose what to insert between headings, instead of #. Ex: , , ->, :, etc.')
+			.setName('Seperator')
+			.setDesc('Choose what to insert between headings instead of #.')
 			.addText(text => {
 				text.setValue(this.plugin.settings.sep);
 				text.onChange(value => {
@@ -127,7 +127,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 				});
 			});
 
-		containerEl.createEl('h2', {text: 'Notifications'})
+		new Setting(containerEl).setName('Notifications').setHeading();
 		new Setting(containerEl)
 			.setName('Enable notifications')
 			.setDesc('Have a notice pop up whenever a link is automatically changed.')

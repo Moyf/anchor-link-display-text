@@ -1,4 +1,4 @@
-# Header Display Text
+# Anchor Link Display Text
 
 This is a plugin for [Obsidian](https://obsidian.md).
 
