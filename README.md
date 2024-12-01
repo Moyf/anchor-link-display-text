@@ -4,7 +4,7 @@ This is a plugin for [Obsidian](https://obsidian.md).
 
 ## Description
 
-This plugin automatically sets the display text of links to headings of other notes to be the name of the heading instead of showing the link text as it appears. So, instead of:
+This plugin automatically sets the display text of anchor links (links to a heading of another note) to be the name of the heading instead of showing the link text as it appears. So, instead of:
 
 ``` Markdown
 [[Title#Heading]]
@@ -16,13 +16,24 @@ The link will automatically update to:
 [[Title#Heading|Heading]]
 ```
 
-This provides a nice appearance but saves the time of manually setting the display text, especially if you use tab to autocomplete the link (when you autocomplete, you have to navigate back in front of the brackets, add the vertical bar, and then type the heading name).
+This provides a nicer appearance while saving the time of manually setting the display text, especially if you use tab to autocomplete the link, because when you autocomplete, you have to navigate back in front of the brackets, add the vertical bar, and then type the heading name.
 
 ## Features
 
-In the settings for this plugin, you can specify the format of the display text:
+The goal of this plugin is to be useful for regardless of one's personal note taking style. That is why in the settings you can specify the format of the display text:
 
 ``` Markdown
 Just the heading (default): [[Title#Heading|Heading]]
-The heading and note name: [[Title#Heading|Title Heading]]
+The heading followed by the note name: [[Title#Heading|Title Heading]]
+The note name followed by the setting: [[Title#Heading|Heading Title]]
 ```
+
+This plugin works the same way for anchor links containing multiple headings. This behavior can be changed too:
+
+``` Markdown
+Show all headings (default): [[Title#Heading#Subheading#Subsubheading|Heading Subheading Subsubheading]]
+Show only the first heading: [[Title#Heading#Subheading#Subsubheading|Heading]]
+Show only the last heading: [[Title#Heading#Subheading#Subsubheading|Subsubheading]]
+```
+
+By default, the headings in the display text will be separated by a single space, but this can be changed to whatever you prefer. Some examples may be a comma (, ), colon (: ), or arrow (-> ). Just not that whatever is typed in the separator text box in the settings will be exactly what is used in the display text, nothing is added to it or removed from it.
