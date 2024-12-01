@@ -8,11 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
-- Name of plugin and related class names changed to use the phrase "anchor links", as this is what they are refered to in th Obsidian docs.
+- Name of plugin and related class names changed to use the phrase "anchor links", as this is what they are referred to in th Obsidian docs.
 
 ### Fixed
 
-- Headings in settings tab follow Obisidian guidelines.
+- Headings in settings tab follow Obsidian guidelines.
 
 ## [0.2.0] - 2024-11-29
 
