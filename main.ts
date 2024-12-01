@@ -1,6 +1,6 @@
 import { App, Editor, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
-interface HeaderDisplayTextSettings {
+interface AnchorDisplayTextSettings {
 	includeNoteName : string;
 	whichHeadings: string;
 	includeNotice: boolean;
@@ -8,7 +8,7 @@ interface HeaderDisplayTextSettings {
 	sep : string;
 }
 
-const DEFAULT_SETTINGS: HeaderDisplayTextSettings = {
+const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 	includeNoteName: 'headersOnly',
 	whichHeadings: 'allHeaders',
 	includeNotice: false,
@@ -16,13 +16,13 @@ const DEFAULT_SETTINGS: HeaderDisplayTextSettings = {
 	sep: ' '
 }
 
-export default class HeaderDisplayText extends Plugin {
-	settings: HeaderDisplayTextSettings;
+export default class AnchorDisplayText extends Plugin {
+	settings: AnchorDisplayTextSettings;
 
 	async onload() {
 		await this.loadSettings();
 
-		this.addSettingTab(new HeaderDisplayTextSettingTab(this.app, this));
+		this.addSettingTab(new AnchorDisplayTextSettingTab(this.app, this));
 
 		// look for header link creation
 		this.registerEvent(
@@ -77,10 +77,10 @@ export default class HeaderDisplayText extends Plugin {
 
 }
 
-class HeaderDisplayTextSettingTab extends PluginSettingTab {
-	plugin: HeaderDisplayText;
+class AnchorDisplayTextSettingTab extends PluginSettingTab {
+	plugin: AnchorDisplayText;
 
-	constructor(app: App, plugin: HeaderDisplayText) {
+	constructor(app: App, plugin: AnchorDisplayText) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}

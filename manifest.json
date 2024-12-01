@@ -1,10 +1,10 @@
 {
-	"id": "header-display-text",
-	"name": "Header Display Text",
+	"id": "anchor-display-text",
+	"name": "anchor Display Text",
 	"version": "0.2.0",
 	"minAppVersion": "0.15.0",
-	"description": "Automatically uses linked headers as the display text for the link.",
-	"author": "Robert Arsenault",
+	"description": "Automatically uses the linked heading as the display text for the anchor links.",
+	"author": "Robert C Arsenault",
 	"authorUrl": "https://github.com/rca-umb",
 	"isDesktopOnly": false
 }
