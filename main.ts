@@ -79,11 +79,18 @@ export default class AnchorDisplayText extends Plugin {
 
 class AnchorDisplayTextSettingTab extends PluginSettingTab {
 	plugin: AnchorDisplayText;
+	private notificationTextSetting?: Setting;
 
 	constructor(app: App, plugin: AnchorDisplayText) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
+
+	displayNotificationTextSetting() {
+        if (this.notificationTextSetting) {
+            this.notificationTextSetting.settingEl.style.display = this.plugin.settings.includeNotice ? 'block' : 'none';
+        }
+    }
 
 	display(): void {
 		const {containerEl} = this;
@@ -135,10 +142,11 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 				toggle.setValue(this.plugin.settings.includeNotice);
 				toggle.onChange(value => {
 					this.plugin.settings.includeNotice = value;
+					this.displayNotificationTextSetting();
 					this.plugin.saveSettings();
 				});
 			});
-		new Setting(containerEl)
+		this.notificationTextSetting = new Setting(containerEl)
 			.setName('Notification text')
 			.setDesc('Set the text to appear in the notification.')
 			.addText(text => {
@@ -148,5 +156,6 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				});
 			});
+		this.displayNotificationTextSetting();
 	}
 }
