@@ -88,7 +88,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 
 	displayNotificationTextSetting() {
         if (this.notificationTextSetting) {
-            this.notificationTextSetting.settingEl.style.display = this.plugin.settings.includeNotice ? 'block' : 'none';
+            this.notificationTextSetting.settingEl.style.display = this.plugin.settings.includeNotice ? 'flex' : 'none';
         }
     }
 
