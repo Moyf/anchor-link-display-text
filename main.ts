@@ -1,4 +1,8 @@
-import { App, Editor, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+
+interface AnchorDisplaySuggestion {
+	displayText: string;
+}
 
 interface AnchorDisplayTextSettings {
 	includeNoteName : string;
@@ -21,6 +25,7 @@ export default class AnchorDisplayText extends Plugin {
 		await this.loadSettings();
 
 		this.addSettingTab(new AnchorDisplayTextSettingTab(this.app, this));
+		this.registerEditorSuggest(new AnchorDisplaySuggest(this));
 
 		// look for header link creation
 		this.registerEvent(
@@ -74,6 +79,71 @@ export default class AnchorDisplayText extends Plugin {
 		await this.saveData(this.settings);
 	}
 
+}
+
+class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
+	private plugin: AnchorDisplayText;
+
+	constructor(plugin: AnchorDisplayText) {
+		super(plugin.app);
+		this.plugin = plugin;
+	}
+
+	onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
+		const currentLine = editor.getLine(cursor.line);
+		// match links to other anchor links WITHOUT an already defined display text
+		const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
+		const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
+
+		if(!match) {
+			return null;
+		}
+
+		return {
+			start: {
+				line: cursor.line,
+				ch: match.index! + match[0].length - 2,
+			},
+			end: {
+				line: cursor.line,
+				ch: match.index! + match[0].length,
+			},
+			query: match[1],
+		};
+	};
+
+	getSuggestions(context: EditorSuggestTriggerInfo): AnchorDisplaySuggestion[] {
+		const headings = context.query.split('#')
+		let displayText = headings[1];
+		for (let i = 2; i < headings.length; i++) {
+			displayText += this.plugin.settings.sep + headings[i];
+		}
+		
+		const suggestion1: AnchorDisplaySuggestion = {
+			displayText: displayText,
+		}
+		const suggestion2: AnchorDisplaySuggestion = {
+			displayText: `${headings[0]}${this.plugin.settings.sep}${displayText}`,
+		}
+		const suggestion3: AnchorDisplaySuggestion = {
+			displayText: `${displayText}${this.plugin.settings.sep}${headings[0]}`,
+		}
+		return [suggestion1, suggestion2, suggestion3];
+	};
+
+	renderSuggestion(value: AnchorDisplaySuggestion, el: HTMLElement) {
+		const suggestionEl = el.createEl('div', { cls: 'suggestion-item' });
+
+		suggestionEl.createEl('div', {
+			text: value.displayText,
+			cls: 'suggestion-main-text',
+		});
+	};
+
+	selectSuggestion(value: AnchorDisplaySuggestion, evt: MouseEvent | KeyboardEvent): void {
+		const editor = this.context!.editor;
+		editor.replaceRange(`|${value.displayText}`, this.context!.start, this.context!.end, 'headerDisplayText');
+	};
 }
 
 class AnchorDisplayTextSettingTab extends PluginSettingTab {
