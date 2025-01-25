@@ -2,6 +2,7 @@ import { App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, N
 
 interface AnchorDisplaySuggestion {
 	displayText: string;
+	source: string;
 }
 
 interface AnchorDisplayTextSettings {
@@ -33,7 +34,7 @@ export default class AnchorDisplayText extends Plugin {
 				// get what is being typed
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
-				// match links to other anchor links WITHOUT an already defined display text
+				// match anchor links WITHOUT an already defined display text
 				const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
 				const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 				if (match) {
@@ -91,9 +92,10 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 
 	onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
 		const currentLine = editor.getLine(cursor.line);
-		// match links to other anchor links WITHOUT an already defined display text
-		const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
-		const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
+		// match anchor links, even if they already have a display text
+		const headerLinkPattern = /\[\[([^\]]+#[^\n\r\]]+)\]\]/;
+		// only when cursor is immediately after the link
+		const match = currentLine.slice(0, cursor.ch + 1).match(headerLinkPattern);
 
 		if(!match) {
 			return null;
@@ -121,12 +123,15 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		
 		const suggestion1: AnchorDisplaySuggestion = {
 			displayText: displayText,
+			source: 'Don\'t include note name',
 		}
 		const suggestion2: AnchorDisplaySuggestion = {
 			displayText: `${headings[0]}${this.plugin.settings.sep}${displayText}`,
+			source: 'Note name and than heading(s)',
 		}
 		const suggestion3: AnchorDisplaySuggestion = {
 			displayText: `${displayText}${this.plugin.settings.sep}${headings[0]}`,
+			source: 'Heading(s) and than note name',
 		}
 		return [suggestion1, suggestion2, suggestion3];
 	};
@@ -137,6 +142,11 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		suggestionEl.createEl('div', {
 			text: value.displayText,
 			cls: 'suggestion-main-text',
+		});
+
+		suggestionEl.createEl('small', {
+			text: value.source,
+			cls: 'suggestion-note',
 		});
 	};
 
