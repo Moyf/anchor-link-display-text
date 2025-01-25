@@ -1,7 +1,7 @@
 {
 	"id": "anchor-display-text",
 	"name": "Anchor Link Display Text",
-	"version": "1.0.1",
+	"version": "1.1.0",
 	"minAppVersion": "0.15.0",
 	"description": "Automatically uses the linked heading as the display text for the anchor links.",
 	"author": "Robert C Arsenault",

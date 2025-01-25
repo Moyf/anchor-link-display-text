@@ -4,7 +4,6 @@ interface AnchorDisplayTextSettings {
 	includeNoteName : string;
 	whichHeadings: string;
 	includeNotice: boolean;
-	noticeText: string;
 	sep : string;
 }
 
@@ -12,7 +11,6 @@ const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 	includeNoteName: 'headersOnly',
 	whichHeadings: 'allHeaders',
 	includeNotice: false,
-	noticeText: 'Link changed!',
 	sep: ' '
 }
 
@@ -48,15 +46,16 @@ export default class AnchorDisplayText extends Plugin {
 						}
 					}
 					const startIndex = (match.index ?? 0) + match[0].length - 2;
-					if (this.settings.includeNoteName === 'headersOnly') {
-						editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
-					} else if (this.settings.includeNoteName === 'noteNameFirst') {
-						editor.replaceRange(`|${headings[0]}${this.settings.sep}${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
+					// add note name to display text if wanted
+					if (this.settings.includeNoteName === 'noteNameFirst') {
+						displayText = `${headings[0]}${this.settings.sep}${displayText}`;
 					} else if (this.settings.includeNoteName === 'noteNameLast') {
-						editor.replaceRange(`|${displayText}${this.settings.sep}${headings[0]}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
+						displayText = `${displayText}${this.settings.sep}${headings[0]}`;
 					}
+					// change the display text of the link
+					editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
 					if (this.settings.includeNotice) {
-						new Notice (this.settings.noticeText)
+						new Notice (`Updated anchor link display text.`);
 					}
 				}
 			})
@@ -79,24 +78,16 @@ export default class AnchorDisplayText extends Plugin {
 
 class AnchorDisplayTextSettingTab extends PluginSettingTab {
 	plugin: AnchorDisplayText;
-	private notificationTextSetting?: Setting;
 
 	constructor(app: App, plugin: AnchorDisplayText) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
 
-	displayNotificationTextSetting() {
-        if (this.notificationTextSetting) {
-            this.notificationTextSetting.settingEl.style.display = this.plugin.settings.includeNotice ? 'flex' : 'none';
-        }
-    }
-
 	display(): void {
 		const {containerEl} = this;
 		containerEl.empty();
 
-		new Setting(containerEl).setName('Display text format').setHeading();
 		new Setting(containerEl)
 			.setName('Include note name')
 			.setDesc('Include the title of the note in the display text.')
@@ -134,28 +125,15 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 				});
 			});
 
-		new Setting(containerEl).setName('Notifications').setHeading();
 		new Setting(containerEl)
 			.setName('Enable notifications')
-			.setDesc('Have a notice pop up whenever a link is automatically changed.')
+			.setDesc('Have a notice pop up whenever an anchor link is automatically changed.')
 			.addToggle(toggle => {
 				toggle.setValue(this.plugin.settings.includeNotice);
 				toggle.onChange(value => {
 					this.plugin.settings.includeNotice = value;
-					this.displayNotificationTextSetting();
 					this.plugin.saveSettings();
 				});
 			});
-		this.notificationTextSetting = new Setting(containerEl)
-			.setName('Notification text')
-			.setDesc('Set the text to appear in the notification.')
-			.addText(text => {
-				text.setValue(this.plugin.settings.noticeText);
-				text.onChange(value => {
-					this.plugin.settings.noticeText = value;
-					this.plugin.saveSettings();
-				});
-			});
-		this.displayNotificationTextSetting();
 	}
 }
