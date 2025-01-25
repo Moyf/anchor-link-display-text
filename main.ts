@@ -29,7 +29,7 @@ export default class AnchorDisplayText extends Plugin {
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
 				// match links to other anchor links WITHOUT an already defined display text
-				const headerLinkPattern = /\[\[([^\]]+#[^|]+)\]\]/;
+				const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
 				const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 				if (match) {
 					// handle multiple subheadings
