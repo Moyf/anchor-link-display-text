@@ -4,7 +4,6 @@ interface AnchorDisplayTextSettings {
 	includeNoteName : string;
 	whichHeadings: string;
 	includeNotice: boolean;
-	noticeText: string;
 	sep : string;
 }
 
@@ -12,7 +11,6 @@ const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 	includeNoteName: 'headersOnly',
 	whichHeadings: 'allHeaders',
 	includeNotice: false,
-	noticeText: 'Link changed!',
 	sep: ' '
 }
 
@@ -48,15 +46,16 @@ export default class AnchorDisplayText extends Plugin {
 						}
 					}
 					const startIndex = (match.index ?? 0) + match[0].length - 2;
-					if (this.settings.includeNoteName === 'headersOnly') {
-						editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
-					} else if (this.settings.includeNoteName === 'noteNameFirst') {
-						editor.replaceRange(`|${headings[0]}${this.settings.sep}${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
+					// add note name to display text if wanted
+					if (this.settings.includeNoteName === 'noteNameFirst') {
+						displayText = `${headings[0]}${this.settings.sep}${displayText}`;
 					} else if (this.settings.includeNoteName === 'noteNameLast') {
-						editor.replaceRange(`|${displayText}${this.settings.sep}${headings[0]}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
+						displayText = `${displayText}${this.settings.sep}${headings[0]}`;
 					}
+					// change the display text of the link
+					editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
 					if (this.settings.includeNotice) {
-						new Notice (this.settings.noticeText)
+						new Notice (`Updated anchor link display text.`);
 					}
 				}
 			})
