@@ -36,4 +36,4 @@ Show only the first heading: [[Title#Heading#Subheading#Subsubheading|Heading]]
 Show only the last heading: [[Title#Heading#Subheading#Subsubheading|Subsubheading]]
 ```
 
-By default, the headings in the display text will be separated by a single space, but this can be changed to whatever you prefer. Some examples may be a comma (, ), colon (: ), or arrow (-> ). Just not that whatever is typed in the separator text box in the settings will be exactly what is used in the display text, nothing is added to it or removed from it.
+By default, the headings in the display text will be separated by a single space, but this can be changed to whatever you prefer. Some examples may be a comma (, ), colon (: ), or arrow (-> ). Just note that whatever is typed in the separator text box in the settings will be exactly what is used in the display text, nothing is added to it or removed from it.
