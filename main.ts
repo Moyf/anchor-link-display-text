@@ -108,14 +108,16 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 			},
 			end: {
 				line: cursor.line,
-				ch: match.index! + match[0].length,
+				ch: match.index! + match[0].length - 2,
 			},
 			query: match[1],
 		};
 	};
 
 	getSuggestions(context: EditorSuggestTriggerInfo): AnchorDisplaySuggestion[] {
-		const headings = context.query.split('#')
+		// don't include existing display text in headings
+		const headings = context.query.split('|')[0].split('#');
+
 		let displayText = headings[1];
 		for (let i = 2; i < headings.length; i++) {
 			displayText += this.plugin.settings.sep + headings[i];
@@ -152,7 +154,14 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 
 	selectSuggestion(value: AnchorDisplaySuggestion, evt: MouseEvent | KeyboardEvent): void {
 		const editor = this.context!.editor;
+		// if there is already a display text, will need to overwrite it
+		const displayTextPattern = /\|([^\]]+)/;
+		const match = this.context!.query.match(displayTextPattern);
+		if (match) {
+			this.context!.start.ch = this.context!.start.ch - match[0].length;
+		}
 		editor.replaceRange(`|${value.displayText}`, this.context!.start, this.context!.end, 'headerDisplayText');
+		return;
 	};
 }
 
