@@ -93,9 +93,9 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 	onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
 		const currentLine = editor.getLine(cursor.line);
 		// match anchor links, even if they already have a display text
-		const headerLinkPattern = /(\[\[([^\]]+#[^\n\r\]]+)\]\])\s*$/;
+		const headerLinkPattern = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
 		// only when cursor is immediately after the link
-		const match = currentLine.slice(0, cursor.ch + 1).match(headerLinkPattern);
+		const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 
 		if(!match) {
 			return null;
