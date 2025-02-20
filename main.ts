@@ -93,7 +93,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 	onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
 		const currentLine = editor.getLine(cursor.line);
 		// match anchor links, even if they already have a display text
-		const headerLinkPattern = /\[\[([^\]]+#[^\n\r\]]+)\]\]/;
+		const headerLinkPattern = /\[\[([^\]]+#[^\n\r\]]+)\]\]\s*$/;
 		// only when cursor is immediately after the link
 		const match = currentLine.slice(0, cursor.ch + 1).match(headerLinkPattern);
 
@@ -104,7 +104,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		return {
 			start: {
 				line: cursor.line,
-				ch: match.index! + match[0].length - 2,
+				ch: match.index! + match[0].length - 2, // 2 less to keep closing brackets
 			},
 			end: {
 				line: cursor.line,
@@ -154,14 +154,13 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 
 	selectSuggestion(value: AnchorDisplaySuggestion, evt: MouseEvent | KeyboardEvent): void {
 		const editor = this.context!.editor;
-		// if there is already a display text, will need to overwrite it
+		// if there is already display text, will need to overwrite it
 		const displayTextPattern = /\|([^\]]+)/;
 		const match = this.context!.query.match(displayTextPattern);
 		if (match) {
 			this.context!.start.ch = this.context!.start.ch - match[0].length;
 		}
 		editor.replaceRange(`|${value.displayText}`, this.context!.start, this.context!.end, 'headerDisplayText');
-		return;
 	};
 }
 
