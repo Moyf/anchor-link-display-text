@@ -139,11 +139,24 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 	};
 
 	renderSuggestion(value: AnchorDisplaySuggestion, el: HTMLElement) {
-		const suggestionEl = el.createDiv({cls: 'suggestion-item mod-complex'});
-		const contentContainer = suggestionEl.createDiv({cls: 'suggestion-content'});
-		contentContainer.createDiv({cls: 'suggestion-title', text: value.displayText});
-		contentContainer.createDiv({cls: 'suggestion-note', text: value.source});
-	
+		const suggestionItemModEl = el.createDiv({cls: 'suggestion-item mod-complex'});
+		const suggestionContentEl = suggestionItemModEl.createDiv({cls: 'suggestion-content'});
+		suggestionContentEl.createDiv({cls: 'suggestion-title', text: value.displayText});
+		suggestionContentEl.createDiv({cls: 'suggestion-note', text: value.source});
+		// prompt instructions are a child of the suggestion container, which will
+		// be the parent of the parent of the parent of the element which gets passed
+		// to this function
+		const suggestionItemEl = suggestionItemModEl.parentElement
+		const suggestionEl = suggestionItemEl!.parentElement;
+		const suggestionContainerEl = suggestionEl!.parentElement;
+		// only need to render the prompt instructions once, but renderSuggestion gets called 
+		// on each suggestion
+		if (suggestionContainerEl!.childElementCount < 2) {
+			const promptInstructionsEl = suggestionContainerEl!.createDiv({cls: 'prompt-instructions'});
+			const instructionEl = promptInstructionsEl.createDiv({cls: 'prompt-instruction'});
+			instructionEl.createEl('span', {cls: 'prompt-instruction-command', text:'↵'});
+			instructionEl.createEl('span', {text:'to accept'});
+		}
 	};
 
 	selectSuggestion(value: AnchorDisplaySuggestion, evt: MouseEvent | KeyboardEvent): void {
