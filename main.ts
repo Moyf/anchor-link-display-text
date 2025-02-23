@@ -9,14 +9,16 @@ interface AnchorDisplayTextSettings {
 	includeNoteName : string;
 	whichHeadings: string;
 	includeNotice: boolean;
-	sep : string;
+	sep: string;
+	suggest: boolean
 }
 
 const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 	includeNoteName: 'headersOnly',
 	whichHeadings: 'allHeaders',
 	includeNotice: false,
-	sep: ' '
+	sep: ' ',
+	suggest: true
 }
 
 export default class AnchorDisplayText extends Plugin {
@@ -26,7 +28,9 @@ export default class AnchorDisplayText extends Plugin {
 		await this.loadSettings();
 
 		this.addSettingTab(new AnchorDisplayTextSettingTab(this.app, this));
-		this.registerEditorSuggest(new AnchorDisplaySuggest(this));
+		if (this.settings.suggest) {
+			this.registerEditorSuggest(new AnchorDisplaySuggest(this));
+		}
 
 		// look for header link creation
 		this.registerEvent(
@@ -196,6 +200,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				});
 			});
+
 		new Setting(containerEl)
 			.setName('Include subheadings')
 			.setDesc('Change which headings and subheadings are in the display text.')
@@ -209,6 +214,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				});
 			});
+
 		new Setting(containerEl)
 			.setName('Seperator')
 			.setDesc('Choose what to insert between headings instead of #.')
@@ -227,6 +233,17 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 				toggle.setValue(this.plugin.settings.includeNotice);
 				toggle.onChange(value => {
 					this.plugin.settings.includeNotice = value;
+					this.plugin.saveSettings();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName('Suggest alternatives')
+			.setDesc('After an anchor link is created, will suggest other options.')
+			.addToggle(toggle => {
+				toggle.setValue(this.plugin.settings.suggest);
+				toggle.onChange(value => {
+					this.plugin.settings.suggest = !this.plugin.settings.suggest;
 					this.plugin.saveSettings();
 				});
 			});
