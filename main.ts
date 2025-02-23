@@ -1,4 +1,4 @@
-import { App, Editor, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { App, Editor, Notice, Plugin, PluginSettingTab, Setting, debounce } from 'obsidian';
 
 interface AnchorDisplayTextSettings {
 	includeNoteName : string;
@@ -24,11 +24,15 @@ export default class AnchorDisplayText extends Plugin {
 
 		// look for header link creation
 		this.registerEvent(
-			this.app.workspace.on('editor-change', (editor: Editor) => {
-				// get what is being typed
+			this.app.workspace.on('editor-change', debounce((editor: Editor) => {
+				// Only process if the last typed character is ']'
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
-				// match links to other anchor links WITHOUT an already defined display text
+				const lastChar = currentLine[cursor.ch - 1];
+				
+				if (lastChar !== ']') return;
+				
+				// get what is being typed
 				const headerLinkPattern = /\[\[([^\]]+#[^|]+)\]\]/;
 				const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 				if (match) {
@@ -52,13 +56,18 @@ export default class AnchorDisplayText extends Plugin {
 					} else if (this.settings.includeNoteName === 'noteNameLast') {
 						displayText = `${displayText}${this.settings.sep}${headings[0]}`;
 					}
+
+					if (displayText.startsWith('^')) {
+						displayText = displayText.slice(1);
+					}
+
 					// change the display text of the link
 					editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
 					if (this.settings.includeNotice) {
 						new Notice (`Updated anchor link display text.`);
 					}
 				}
-			})
+			}, 150)) // 150ms debounce
 		);
 	}
 
