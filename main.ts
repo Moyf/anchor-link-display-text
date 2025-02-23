@@ -139,17 +139,11 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 	};
 
 	renderSuggestion(value: AnchorDisplaySuggestion, el: HTMLElement) {
-		const suggestionEl = el.createEl('div', { cls: 'suggestion-item' });
-
-		suggestionEl.createEl('div', {
-			text: value.displayText,
-			cls: 'suggestion-main-text',
-		});
-
-		suggestionEl.createEl('small', {
-			text: value.source,
-			cls: 'suggestion-note',
-		});
+		const suggestionEl = el.createDiv({cls: 'suggestion-item mod-complex'});
+		const contentContainer = suggestionEl.createDiv({cls: 'suggestion-content'});
+		contentContainer.createDiv({cls: 'suggestion-title', text: value.displayText});
+		contentContainer.createDiv({cls: 'suggestion-note', text: value.source});
+	
 	};
 
 	selectSuggestion(value: AnchorDisplaySuggestion, evt: MouseEvent | KeyboardEvent): void {
