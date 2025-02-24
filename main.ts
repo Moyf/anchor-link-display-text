@@ -188,6 +188,19 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
+	validateSep(value: string): string {
+		let validValue: string = value;
+		for (const c of value) {
+			if ('[]#^|'.includes(c)) {
+				validValue = validValue.replace(c, '');
+			}
+		}
+		if (validValue != value) {
+			new Notice(`Seperators cannot contain any of the following characters: []#^|`);
+		}
+		return validValue;
+	}
+
 	display(): void {
 		const {containerEl} = this;
 		containerEl.empty();
@@ -226,7 +239,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 			.addText(text => {
 				text.setValue(this.plugin.settings.sep);
 				text.onChange(value => {
-					this.plugin.settings.sep = value;
+					this.plugin.settings.sep = this.validateSep(value);
 					this.plugin.saveSettings();
 				});
 			});
