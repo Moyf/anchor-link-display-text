@@ -196,7 +196,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 			}
 		}
 		if (validValue != value) {
-			new Notice(`Seperators cannot contain any of the following characters: []#^|`);
+			new Notice(`Separators cannot contain any of the following characters: []#^|`);
 		}
 		return validValue;
 	}
@@ -234,7 +234,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName('Seperator')
+			.setName('Separator')
 			.setDesc('Choose what to insert between headings instead of #.')
 			.addText(text => {
 				text.setValue(this.plugin.settings.sep);

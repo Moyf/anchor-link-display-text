@@ -10,6 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Autocomplete suggestions.
 
+### Changed
+
+- Heading separators are now validated to not include link breaking characters `[]|#^`. If any of these characters are typed into the separator field, the character will be ignored and a warning will appear.
+
+### Fixed
+
+- Spelling of "separator".
+
 ## [1.1.0] - 2025-1-25
 
 ### Removed
