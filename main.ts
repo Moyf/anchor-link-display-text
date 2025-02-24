@@ -1,4 +1,4 @@
-import { App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, Command, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
 
 interface AnchorDisplaySuggestion {
 	displayText: string;
@@ -23,14 +23,15 @@ const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 
 export default class AnchorDisplayText extends Plugin {
 	settings: AnchorDisplayTextSettings;
+	suggestionsRegistered: boolean = false;
 
 	async onload() {
 		await this.loadSettings();
-
 		this.addSettingTab(new AnchorDisplayTextSettingTab(this.app, this));
 		if (this.settings.suggest) {
-			this.registerEditorSuggest(new AnchorDisplaySuggest(this));
-		}
+            this.registerEditorSuggest(new AnchorDisplaySuggest(this));
+			this.suggestionsRegistered = true;
+        }
 
 		// look for header link creation
 		this.registerEvent(
@@ -95,6 +96,10 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 	}
 
 	onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
+		// turns off suggestions if the setting is disabled but the app hasn't been reloaded
+		if (!this.plugin.settings.suggest) {
+            return null;
+        }
 		const currentLine = editor.getLine(cursor.line);
 		// match anchor links, even if they already have a display text
 		const headerLinkPattern = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
@@ -239,12 +244,16 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Suggest alternatives')
-			.setDesc('After an anchor link is created, will suggest other options.')
+			.setDesc('After an anchor link is created, the suggestion window will present alternative display text.')
 			.addToggle(toggle => {
 				toggle.setValue(this.plugin.settings.suggest);
 				toggle.onChange(value => {
-					this.plugin.settings.suggest = !this.plugin.settings.suggest;
+					this.plugin.settings.suggest = value;
 					this.plugin.saveSettings();
+					if (!this.plugin.suggestionsRegistered) {
+						this.plugin.registerEditorSuggest(new AnchorDisplaySuggest(this.plugin));
+						this.plugin.suggestionsRegistered = true;
+					}
 				});
 			});
 	}
