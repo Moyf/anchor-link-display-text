@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+### Added
+
+- Display text suggestions. A suggestions popup will appear when the cursor is directly after an anchor link with display text. There will be three suggestions one, for each of the display text formats that can be used with this plugin (no note name, note name and then heading(s), heading(s) and then note name).
+
+### Changed
+
+- Heading separators are now validated to not include link breaking characters `[]|#^`. If any of these characters are typed into the separator field, the character will be ignored and a warning will appear.
+
+### Fixed
+
+- Minor typos.
+
 ## [1.1.0] - 2025-1-25
 
 ### Removed

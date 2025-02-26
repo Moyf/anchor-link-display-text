@@ -1,26 +1,37 @@
-import { App, Editor, Notice, Plugin, PluginSettingTab, Setting, debounce } from 'obsidian';
+import { App, Command, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting, TFile, debounce } from 'obsidian';
+
+interface AnchorDisplaySuggestion {
+	displayText: string;
+	source: string;
+}
 
 interface AnchorDisplayTextSettings {
 	includeNoteName : string;
 	whichHeadings: string;
 	includeNotice: boolean;
-	sep : string;
+	sep: string;
+	suggest: boolean
 }
 
 const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 	includeNoteName: 'headersOnly',
 	whichHeadings: 'allHeaders',
 	includeNotice: false,
-	sep: ' '
+	sep: ' ',
+	suggest: true
 }
 
 export default class AnchorDisplayText extends Plugin {
 	settings: AnchorDisplayTextSettings;
+	suggestionsRegistered: boolean = false;
 
 	async onload() {
 		await this.loadSettings();
-
 		this.addSettingTab(new AnchorDisplayTextSettingTab(this.app, this));
+		if (this.settings.suggest) {
+            this.registerEditorSuggest(new AnchorDisplaySuggest(this));
+			this.suggestionsRegistered = true;
+        }
 
 		// look for header link creation
 		this.registerEvent(
@@ -28,12 +39,12 @@ export default class AnchorDisplayText extends Plugin {
 				// Only process if the last typed character is ']'
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
+        
 				const lastChar = currentLine[cursor.ch - 1];
-				
 				if (lastChar !== ']') return;
 				
-				// get what is being typed
-				const headerLinkPattern = /\[\[([^\]]+#[^|]+)\]\]/;
+				// match anchor links WITHOUT an already defined display text
+				const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
 				const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 				if (match) {
 					// handle multiple subheadings
@@ -85,12 +96,118 @@ export default class AnchorDisplayText extends Plugin {
 
 }
 
+class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
+	private plugin: AnchorDisplayText;
+
+	constructor(plugin: AnchorDisplayText) {
+		super(plugin.app);
+		this.plugin = plugin;
+	}
+
+	onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
+		// turns off suggestions if the setting is disabled but the app hasn't been reloaded
+		if (!this.plugin.settings.suggest) {
+            return null;
+        }
+		const currentLine = editor.getLine(cursor.line);
+		// match anchor links, even if they already have a display text
+		const headerLinkPattern = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
+		// only when cursor is immediately after the link
+		const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
+
+		if(!match) {
+			return null;
+		}
+
+		return {
+			start: {
+				line: cursor.line,
+				ch: match.index! + match[1].length - 2, // 2 less to keep closing brackets
+			},
+			end: {
+				line: cursor.line,
+				ch: match.index! + match[1].length - 2,
+			},
+			query: match[2],
+		};
+	};
+
+	getSuggestions(context: EditorSuggestTriggerInfo): AnchorDisplaySuggestion[] {
+		// don't include existing display text in headings
+		const headings = context.query.split('|')[0].split('#');
+
+		let displayText = headings[1];
+		for (let i = 2; i < headings.length; i++) {
+			displayText += this.plugin.settings.sep + headings[i];
+		}
+		
+		const suggestion1: AnchorDisplaySuggestion = {
+			displayText: displayText,
+			source: 'Don\'t include note name',
+		}
+		const suggestion2: AnchorDisplaySuggestion = {
+			displayText: `${headings[0]}${this.plugin.settings.sep}${displayText}`,
+			source: 'Note name and than heading(s)',
+		}
+		const suggestion3: AnchorDisplaySuggestion = {
+			displayText: `${displayText}${this.plugin.settings.sep}${headings[0]}`,
+			source: 'Heading(s) and than note name',
+		}
+		return [suggestion1, suggestion2, suggestion3];
+	};
+
+	renderSuggestion(value: AnchorDisplaySuggestion, el: HTMLElement) {
+		// prompt instructions are a child of the suggestion container, which will
+		// be the parent of the parent the element which gets passed to this function
+		const suggestionEl = el.parentElement;
+		const suggestionContainerEl = suggestionEl!.parentElement;
+		// only need to render the prompt instructions once, but renderSuggestion gets called 
+		// on each suggestion
+		if (suggestionContainerEl!.childElementCount < 2) {
+			const promptInstructionsEl = suggestionContainerEl!.createDiv({cls: 'prompt-instructions'});
+			const instructionEl = promptInstructionsEl.createDiv({cls: 'prompt-instruction'});
+			instructionEl.createEl('span', {cls: 'prompt-instruction-command', text:'↵'});
+			instructionEl.createEl('span', {text:'to accept'});
+		}
+		// class of the passed element will be suggestion-item, but we need suggestion-item mod-complex
+		// to get appropriate styling
+		el.setAttribute('class', 'suggestion-item mod-complex');
+		const suggestionContentEl = el.createDiv({cls: 'suggestion-content'});
+		suggestionContentEl.createDiv({cls: 'suggestion-title', text: value.displayText});
+		suggestionContentEl.createDiv({cls: 'suggestion-note', text: value.source});
+	};
+
+	selectSuggestion(value: AnchorDisplaySuggestion, evt: MouseEvent | KeyboardEvent): void {
+		const editor = this.context!.editor;
+		// if there is already display text, will need to overwrite it
+		const displayTextPattern = /\|([^\]]+)/;
+		const match = this.context!.query.match(displayTextPattern);
+		if (match) {
+			this.context!.start.ch = this.context!.start.ch - match[0].length;
+		}
+		editor.replaceRange(`|${value.displayText}`, this.context!.start, this.context!.end, 'headerDisplayText');
+	};
+}
+
 class AnchorDisplayTextSettingTab extends PluginSettingTab {
 	plugin: AnchorDisplayText;
 
 	constructor(app: App, plugin: AnchorDisplayText) {
 		super(app, plugin);
 		this.plugin = plugin;
+	}
+
+	validateSep(value: string): string {
+		let validValue: string = value;
+		for (const c of value) {
+			if ('[]#^|'.includes(c)) {
+				validValue = validValue.replace(c, '');
+			}
+		}
+		if (validValue != value) {
+			new Notice(`Separators cannot contain any of the following characters: []#^|`);
+		}
+		return validValue;
 	}
 
 	display(): void {
@@ -110,6 +227,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				});
 			});
+
 		new Setting(containerEl)
 			.setName('Include subheadings')
 			.setDesc('Change which headings and subheadings are in the display text.')
@@ -123,13 +241,14 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 					this.plugin.saveSettings();
 				});
 			});
+
 		new Setting(containerEl)
-			.setName('Seperator')
+			.setName('Separator')
 			.setDesc('Choose what to insert between headings instead of #.')
 			.addText(text => {
 				text.setValue(this.plugin.settings.sep);
 				text.onChange(value => {
-					this.plugin.settings.sep = value;
+					this.plugin.settings.sep = this.validateSep(value);
 					this.plugin.saveSettings();
 				});
 			});
@@ -142,6 +261,21 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 				toggle.onChange(value => {
 					this.plugin.settings.includeNotice = value;
 					this.plugin.saveSettings();
+				});
+			});
+
+		new Setting(containerEl)
+			.setName('Suggest alternatives')
+			.setDesc('Have a suggestion window to present alternative display text options when the cursor is directly after an anchor link.')
+			.addToggle(toggle => {
+				toggle.setValue(this.plugin.settings.suggest);
+				toggle.onChange(value => {
+					this.plugin.settings.suggest = value;
+					this.plugin.saveSettings();
+					if (!this.plugin.suggestionsRegistered) {
+						this.plugin.registerEditorSuggest(new AnchorDisplaySuggest(this.plugin));
+						this.plugin.suggestionsRegistered = true;
+					}
 				});
 			});
 	}

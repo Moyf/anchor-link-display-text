@@ -37,3 +37,5 @@ Show only the last heading: [[Title#Heading#Subheading#Subsubheading|Subsubheadi
 ```
 
 By default, the headings in the display text will be separated by a single space, but this can be changed to whatever you prefer. Some examples may be a comma (, ), colon (: ), or arrow (-> ). Just note that whatever is typed in the separator text box in the settings will be exactly what is used in the display text, nothing is added to it or removed from it.
+
+Additionally, there is an option for enabling display text alternative suggestions. This is a suggestions window which will appear when the cursor is next to an existing anchor link. All three display text formats described above will be available as suggestions regardless of the option chosen for automatic display text generation. This is useful for users who wish to use multiple formats.
