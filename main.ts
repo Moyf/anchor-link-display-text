@@ -1,4 +1,4 @@
-import { App, Command, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting, TFile, debounce } from 'obsidian';
+import { App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting, debounce } from 'obsidian';
 
 interface AnchorDisplaySuggestion {
 	displayText: string;
@@ -35,7 +35,7 @@ export default class AnchorDisplayText extends Plugin {
 
 		// look for header link creation
 		this.registerEvent(
-			this.app.workspace.on('editor-change', debounce((editor: Editor) => {
+			this.app.workspace.on('editor-change', (editor: Editor) => {
 				// Only process if the last typed character is ']'
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
@@ -78,7 +78,7 @@ export default class AnchorDisplayText extends Plugin {
 						new Notice (`Updated anchor link display text.`);
 					}
 				}
-			}, 150)) // 150ms debounce
+			})
 		);
 	}
 
@@ -106,18 +106,18 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 
 	onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
 		// turns off suggestions if the setting is disabled but the app hasn't been reloaded
-		if (!this.plugin.settings.suggest) {
-            return null;
-        }
+		if (!this.plugin.settings.suggest) return null;
+
 		const currentLine = editor.getLine(cursor.line);
+		const lastChar = currentLine[cursor.ch - 1];
+		if (lastChar !== ']') return null;
+
 		// match anchor links, even if they already have a display text
 		const headerLinkPattern = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
 		// only when cursor is immediately after the link
 		const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 
-		if(!match) {
-			return null;
-		}
+		if(!match) return null;
 
 		return {
 			start: {
@@ -137,6 +137,11 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		const headings = context.query.split('|')[0].split('#');
 
 		let displayText = headings[1];
+
+		if (displayText.startsWith('^')) {
+			displayText = displayText.slice(1);
+		}
+
 		for (let i = 2; i < headings.length; i++) {
 			displayText += this.plugin.settings.sep + headings[i];
 		}
@@ -192,6 +197,12 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 class AnchorDisplayTextSettingTab extends PluginSettingTab {
 	plugin: AnchorDisplayText;
 
+	private showSepNotice = debounce(
+		() => new Notice(`Separators cannot contain any of the following characters: []#^|`), 
+		1000,
+		true
+	);
+
 	constructor(app: App, plugin: AnchorDisplayText) {
 		super(app, plugin);
 		this.plugin = plugin;
@@ -205,7 +216,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 			}
 		}
 		if (validValue != value) {
-			new Notice(`Separators cannot contain any of the following characters: []#^|`);
+			this.showSepNotice();
 		}
 		return validValue;
 	}

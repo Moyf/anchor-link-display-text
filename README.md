@@ -1,6 +1,20 @@
 # Anchor Link Display Text
 
-This is a plugin for [Obsidian](https://obsidian.md).
+This is a plugin for [Obsidian](https://obsidian.md) which automatically sets the display text of anchor links.
+
+## What's New in v1.2
+
+### Added
+
+- Display text suggestions. A suggestions popup will appear when the cursor is directly after an anchor link with display text. There will be three suggestions one, for each of the display text formats that can be used with this plugin (no note name, note name and then heading(s), heading(s) and then note name).
+
+### Changed
+
+- Heading separators are now validated to not include link breaking characters `[]|#^`. If any of these characters are typed into the separator field, the character will be ignored and a warning will appear.
+
+### Fixed
+
+- Minor typos.
 
 ## Description
 
@@ -36,6 +50,6 @@ Show only the first heading: [[Title#Heading#Subheading#Subsubheading|Heading]]
 Show only the last heading: [[Title#Heading#Subheading#Subsubheading|Subsubheading]]
 ```
 
-By default, the headings in the display text will be separated by a single space, but this can be changed to whatever you prefer. Some examples may be a comma (, ), colon (: ), or arrow (-> ). Just note that whatever is typed in the separator text box in the settings will be exactly what is used in the display text, nothing is added to it or removed from it.
+By default, the headings in the display text will be separated by a single space, but this can be changed to whatever you prefer. Some examples may be a comma (, ), colon (: ), or arrow (-> ). Just note that whatever is typed in the separator text box in the settings will be exactly what is used in the display text, nothing is added to it or removed from it, with the exception of characters which will break links: `[]|#^`.
 
 Additionally, there is an option for enabling display text alternative suggestions. This is a suggestions window which will appear when the cursor is next to an existing anchor link. All three display text formats described above will be available as suggestions regardless of the option chosen for automatic display text generation. This is useful for users who wish to use multiple formats.
