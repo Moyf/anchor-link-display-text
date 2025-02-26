@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
-- Autocomplete suggestions.
+- Display text suggestions. A suggestions popup will appear when the cursor is directly after an anchor link with display text. There will be three suggestions one, for each of the display text formats that can be used with this plugin (no note name, note name and then heading(s), heading(s) and then note name).
 
 ### Changed
 
@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
-- Spelling of "separator".
+- Minor typos.
 
 ## [1.1.0] - 2025-1-25
 

@@ -257,7 +257,7 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Suggest alternatives')
-			.setDesc('After an anchor link is created, the suggestion window will present alternative display text.')
+			.setDesc('Have a suggestion window to present alternative display text options when the cursor is directly after an anchor link.')
 			.addToggle(toggle => {
 				toggle.setValue(this.plugin.settings.suggest);
 				toggle.onChange(value => {
