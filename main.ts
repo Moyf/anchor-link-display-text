@@ -24,6 +24,8 @@ const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 export default class AnchorDisplayText extends Plugin {
 	settings: AnchorDisplayTextSettings;
 	suggestionsRegistered: boolean = false;
+	linkStarted: number | null = null;
+	anchorStarted: boolean = false;
 
 	async onload() {
 		await this.loadSettings();
@@ -40,12 +42,28 @@ export default class AnchorDisplayText extends Plugin {
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
         
-				const lastChar = currentLine[cursor.ch - 1];
-				if (lastChar !== ']') return;
+				const lastChars = currentLine.slice(cursor.ch - 2, cursor.ch);
+				if (lastChars === '[[') {
+					this.linkStarted = cursor.line;
+					return
+				}
+				if (this.linkStarted && lastChars[1] === '#') {
+					this.anchorStarted = true;
+					return
+				}
+				if (this.linkStarted && cursor.line !== this.linkStarted) {
+					this.linkStarted = null;
+					this.anchorStarted = false;
+					return
+
+				}
+				else if (!this.anchorStarted && lastChars !== ']]') {
+					return
+				}
 				
 				// match anchor links WITHOUT an already defined display text
 				const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
-				const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
+				const match = currentLine.slice(0, cursor.ch+2).match(headerLinkPattern);
 				if (match) {
 					// handle multiple subheadings
 					const headings = match[1].split('#')
