@@ -1,4 +1,4 @@
-import { App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting, debounce } from 'obsidian';
+import { App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting} from 'obsidian';
 
 interface AnchorDisplaySuggestion {
 	displayText: string;
@@ -196,12 +196,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 
 class AnchorDisplayTextSettingTab extends PluginSettingTab {
 	plugin: AnchorDisplayText;
-
-	private showSepNotice = debounce(
-		() => new Notice(`Separators cannot contain any of the following characters: []#^|`), 
-		1000,
-		true
-	);
+	private sepWarning: Notice | null = null;
 
 	constructor(app: App, plugin: AnchorDisplayText) {
 		super(app, plugin);
@@ -210,13 +205,21 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 
 	validateSep(value: string): string {
 		let validValue: string = value;
+
 		for (const c of value) {
 			if ('[]#^|'.includes(c)) {
 				validValue = validValue.replace(c, '');
 			}
 		}
 		if (validValue != value) {
-			this.showSepNotice();
+			if (!this.sepWarning) {
+				this.sepWarning = new Notice(`Separators cannot contain any of the following characters: []#^|`, 0);
+			}
+		} else {
+			if (this.sepWarning) {
+				this.sepWarning!.hide();
+				this.sepWarning = null;
+			}
 		}
 		return validValue;
 	}
