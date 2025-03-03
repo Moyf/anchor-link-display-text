@@ -63,7 +63,7 @@ export default class AnchorDisplayText extends Plugin {
 				
 				// match anchor links WITHOUT an already defined display text
 				const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
-				const match = currentLine.slice(0, cursor.ch+2).match(headerLinkPattern);
+				const match = currentLine.slice(0, cursor.ch + 2).match(headerLinkPattern);
 				if (match) {
 					// handle multiple subheadings
 					const headings = match[1].split('#')
@@ -116,6 +116,7 @@ export default class AnchorDisplayText extends Plugin {
 
 class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 	private plugin: AnchorDisplayText;
+	private suggestionSelected: EditorPosition | null = null;
 
 	constructor(plugin: AnchorDisplayText) {
 		super(plugin.app);
@@ -125,17 +126,23 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 	onTrigger(cursor: EditorPosition, editor: Editor): EditorSuggestTriggerInfo | null {
 		// turns off suggestions if the setting is disabled but the app hasn't been reloaded
 		if (!this.plugin.settings.suggest) return null;
+		if (this.suggestionSelected) {
+			if (this.suggestionSelected.ch === cursor.ch 
+				&& this.suggestionSelected.line === cursor.line) return null;
+			this.suggestionSelected = null;
+			return null;
+		}
 
 		const currentLine = editor.getLine(cursor.line);
-		const lastChar = currentLine[cursor.ch - 1];
-		if (lastChar !== ']') return null;
+		const lastChars = currentLine.slice(cursor.ch - 2, cursor.ch);
+		if (lastChars !== ']]') return null;
 
 		// match anchor links, even if they already have a display text
 		const headerLinkPattern = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
 		// only when cursor is immediately after the link
 		const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
 
-		if(!match) return null;
+		if (!match) return null;
 
 		return {
 			start: {
@@ -209,6 +216,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 			this.context!.start.ch = this.context!.start.ch - match[0].length;
 		}
 		editor.replaceRange(`|${value.displayText}`, this.context!.start, this.context!.end, 'headerDisplayText');
+		this.suggestionSelected = this.context!.end;
 	};
 }
 
