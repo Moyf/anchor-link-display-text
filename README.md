@@ -14,6 +14,7 @@ This is a plugin for [Obsidian](https://obsidian.md) which automatically sets th
 
 ### Fixed
 
+- `^` character will not be included in the display text when linking to a block.
 - Minor typos.
 
 ## Description
