@@ -36,18 +36,17 @@ export default class AnchorDisplayText extends Plugin {
 		// look for header link creation
 		this.registerEvent(
 			this.app.workspace.on('editor-change', (editor: Editor) => {
-				// Only process if the last typed character is ']'
+				
+				// only process when at the end of a Wikilink
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
-        
 				const lastChars = currentLine.slice(cursor.ch - 2, cursor.ch);
 				if (lastChars !== ']]') {
 					return
 				}
 				
 				// match anchor links WITHOUT an already defined display text
-				const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
-				const match = currentLine.slice(0, cursor.ch + 2).match(headerLinkPattern);
+				const match = currentLine.slice(0, cursor.ch).match(/\[\[([^\]]+#[^|\n\r\]]+)\]\]$/);
 				if (match) {
 					// handle multiple subheadings
 					const headings = match[1].split('#')
@@ -116,15 +115,14 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 			this.suggestionSelected = null;
 			return null;
 		}
-
+		
+		// only process when at the end of a Wikilink
 		const currentLine = editor.getLine(cursor.line);
 		const lastChars = currentLine.slice(cursor.ch - 2, cursor.ch);
 		if (lastChars !== ']]') return null;
 
-		// match anchor links, even if they already have a display text
-		const headerLinkPattern = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
-		// only when cursor is immediately after the link
-		const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
+		// match anchor link even if it has display text
+		const match = currentLine.slice(0, cursor.ch).match( /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/);
 
 		if (!match) return null;
 
