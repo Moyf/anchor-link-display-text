@@ -1,4 +1,9 @@
-import { App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting} from 'obsidian';
+import {App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting} from 'obsidian';
+
+const RE_ANCHOR_NO_DISPLAY = /!?\[\[([^\]]+#[^|\n\r\]]+)\]\]$/;
+const RE_ANCHOR_DISPLAY = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
+const RE_DISPLAY = /\|([^\]]+)/;
+
 
 interface AnchorDisplaySuggestion {
 	displayText: string;
@@ -6,11 +11,12 @@ interface AnchorDisplaySuggestion {
 }
 
 interface AnchorDisplayTextSettings {
-	includeNoteName : string;
+	includeNoteName: string;
 	whichHeadings: string;
 	includeNotice: boolean;
 	sep: string;
-	suggest: boolean
+	suggest: boolean;
+	ignoreEmbedded: boolean;
 }
 
 const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
@@ -18,7 +24,8 @@ const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 	whichHeadings: 'allHeaders',
 	includeNotice: false,
 	sep: ' ',
-	suggest: true
+	suggest: true,
+	ignoreEmbedded: true,
 }
 
 export default class AnchorDisplayText extends Plugin {
@@ -36,19 +43,18 @@ export default class AnchorDisplayText extends Plugin {
 		// look for header link creation
 		this.registerEvent(
 			this.app.workspace.on('editor-change', (editor: Editor) => {
-				// Only process if the last typed character is ']'
+				
+				// only process when at the end of a Wikilink
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
-        
 				const lastChars = currentLine.slice(cursor.ch - 2, cursor.ch);
-				if (lastChars !== ']]') {
-					return
-				}
+				if (lastChars !== ']]') return;
 				
 				// match anchor links WITHOUT an already defined display text
-				const headerLinkPattern = /\[\[([^\]]+#[^|\n\r\]]+)\]\]/;
-				const match = currentLine.slice(0, cursor.ch + 2).match(headerLinkPattern);
+				const match = currentLine.slice(0, cursor.ch).match(RE_ANCHOR_NO_DISPLAY);
 				if (match) {
+					// optionally ignore embedded links
+					if (this.settings.ignoreEmbedded && match[0].charAt(0) === '!') return;
 					// handle multiple subheadings
 					const headings = match[1].split('#')
 					let displayText = ''
@@ -77,7 +83,7 @@ export default class AnchorDisplayText extends Plugin {
 					// change the display text of the link
 					editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
 					if (this.settings.includeNotice) {
-						new Notice (`Updated anchor link display text.`);
+						new Notice(`Updated anchor link display text.`);
 					}
 				}
 			})
@@ -116,17 +122,19 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 			this.suggestionSelected = null;
 			return null;
 		}
-
+		
+		// only process when at the end of a Wikilink
 		const currentLine = editor.getLine(cursor.line);
 		const lastChars = currentLine.slice(cursor.ch - 2, cursor.ch);
 		if (lastChars !== ']]') return null;
 
-		// match anchor links, even if they already have a display text
-		const headerLinkPattern = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
-		// only when cursor is immediately after the link
-		const match = currentLine.slice(0, cursor.ch).match(headerLinkPattern);
+		// match anchor link even if it has display text
+		const slice = currentLine.slice(0, cursor.ch);
+		const match = slice.match(RE_ANCHOR_DISPLAY);
 
 		if (!match) return null;
+		// optionally ignore embedded links
+		if (this.plugin.settings.ignoreEmbedded && slice.charAt(match.index! - 1) === '!') return null;
 
 		return {
 			start: {
@@ -139,7 +147,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 			},
 			query: match[2],
 		};
-	};
+	}
 
 	getSuggestions(context: EditorSuggestTriggerInfo): AnchorDisplaySuggestion[] {
 		// don't include existing display text in headings
@@ -168,7 +176,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 			source: 'Heading(s) and than note name',
 		}
 		return [suggestion1, suggestion2, suggestion3];
-	};
+	}
 
 	renderSuggestion(value: AnchorDisplaySuggestion, el: HTMLElement) {
 		// prompt instructions are a child of the suggestion container, which will
@@ -189,19 +197,18 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		const suggestionContentEl = el.createDiv({cls: 'suggestion-content'});
 		suggestionContentEl.createDiv({cls: 'suggestion-title', text: value.displayText});
 		suggestionContentEl.createDiv({cls: 'suggestion-note', text: value.source});
-	};
+	}
 
 	selectSuggestion(value: AnchorDisplaySuggestion, evt: MouseEvent | KeyboardEvent): void {
 		const editor = this.context!.editor;
 		// if there is already display text, will need to overwrite it
-		const displayTextPattern = /\|([^\]]+)/;
-		const match = this.context!.query.match(displayTextPattern);
+		const match = this.context!.query.match(RE_DISPLAY);
 		if (match) {
 			this.context!.start.ch = this.context!.start.ch - match[0].length;
 		}
 		editor.replaceRange(`|${value.displayText}`, this.context!.start, this.context!.end, 'headerDisplayText');
 		this.suggestionSelected = this.context!.end;
-	};
+	}
 }
 
 class AnchorDisplayTextSettingTab extends PluginSettingTab {
@@ -300,6 +307,17 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 						this.plugin.registerEditorSuggest(new AnchorDisplaySuggest(this.plugin));
 						this.plugin.suggestionsRegistered = true;
 					}
+				});
+			});
+
+		new Setting(containerEl)
+			.setName('Ignore embedded files')
+			.setDesc('Don\'t add or change display text for embedded files.')
+			.addToggle(toggle => {
+				toggle.setValue(this.plugin.settings.ignoreEmbedded);
+				toggle.onChange(value => {
+					this.plugin.settings.ignoreEmbedded = value;
+					this.plugin.saveSettings();
 				});
 			});
 	}

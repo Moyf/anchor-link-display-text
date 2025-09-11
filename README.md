@@ -2,20 +2,15 @@
 
 This is a plugin for [Obsidian](https://obsidian.md) which automatically sets the display text of anchor links.
 
-## What's New in v1.2
+## What's New in v1.3
 
 ### Added
 
-- Display text suggestions. A suggestions popup will appear when the cursor is directly after an anchor link with display text. There will be three suggestions one, for each of the display text formats that can be used with this plugin (no note name, note name and then heading(s), heading(s) and then note name).
-
-### Changed
-
-- Heading separators are now validated to not include link breaking characters `[]|#^`. If any of these characters are typed into the separator field, the character will be ignored and a warning will appear.
+- Option to ignore links for embedded files. On by default.
 
 ### Fixed
 
-- `^` character will not be included in the display text when linking to a block.
-- Minor typos.
+- Minor performance improvements.
 
 ## Description
 
