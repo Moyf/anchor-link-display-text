@@ -10,7 +10,8 @@ interface AnchorDisplayTextSettings {
 	whichHeadings: string;
 	includeNotice: boolean;
 	sep: string;
-	suggest: boolean
+	suggest: boolean;
+	ignoreEmbedded: boolean;
 }
 
 const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
@@ -18,7 +19,8 @@ const DEFAULT_SETTINGS: AnchorDisplayTextSettings = {
 	whichHeadings: 'allHeaders',
 	includeNotice: false,
 	sep: ' ',
-	suggest: true
+	suggest: true,
+	ignoreEmbedded: true,
 }
 
 export default class AnchorDisplayText extends Plugin {
@@ -46,8 +48,10 @@ export default class AnchorDisplayText extends Plugin {
 				}
 				
 				// match anchor links WITHOUT an already defined display text
-				const match = currentLine.slice(0, cursor.ch).match(/\[\[([^\]]+#[^|\n\r\]]+)\]\]$/);
+				const match = currentLine.slice(0, cursor.ch).match(/!{0,1}\[\[([^\]]+#[^|\n\r\]]+)\]\]$/);
 				if (match) {
+					// optionally ignore embedded links
+					if (this.settings.ignoreEmbedded && match[0].charAt(0) === '!') return;
 					// handle multiple subheadings
 					const headings = match[1].split('#')
 					let displayText = ''
@@ -122,9 +126,11 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		if (lastChars !== ']]') return null;
 
 		// match anchor link even if it has display text
-		const match = currentLine.slice(0, cursor.ch).match( /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/);
+		const match = currentLine.slice(0, cursor.ch).match(/!{0,1}(\[\[([^\]]+#[^\n\r\]]+)\]\])$/);
 
 		if (!match) return null;
+		// optionally ignore embedded links
+		if (this.plugin.settings.ignoreEmbedded && match[0].charAt(0) === '!') return null;
 
 		return {
 			start: {
@@ -298,6 +304,17 @@ class AnchorDisplayTextSettingTab extends PluginSettingTab {
 						this.plugin.registerEditorSuggest(new AnchorDisplaySuggest(this.plugin));
 						this.plugin.suggestionsRegistered = true;
 					}
+				});
+			});
+
+		new Setting(containerEl)
+			.setName('Ignore embedded files')
+			.setDesc('Don\'t add or change display text for embedded files.')
+			.addToggle(toggle => {
+				toggle.setValue(this.plugin.settings.ignoreEmbedded);
+				toggle.onChange(value => {
+					this.plugin.settings.ignoreEmbedded = value;
+					this.plugin.saveSettings();
 				});
 			});
 	}
