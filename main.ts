@@ -1,7 +1,7 @@
 import {App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting} from 'obsidian';
 
 const RE_ANCHOR_NO_DISPLAY = /!?\[\[([^\]]+#[^|\n\r\]]+)\]\]$/;
-const RE_ANCHOR_DISPLAY = /!?(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
+const RE_ANCHOR_DISPLAY = /(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
 const RE_DISPLAY = /\|([^\]]+)/;
 
 
@@ -129,11 +129,12 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		if (lastChars !== ']]') return null;
 
 		// match anchor link even if it has display text
-		const match = currentLine.slice(0, cursor.ch).match(RE_ANCHOR_DISPLAY);
+		const slice = currentLine.slice(0, cursor.ch);
+		const match = slice.match(RE_ANCHOR_DISPLAY);
 
 		if (!match) return null;
 		// optionally ignore embedded links
-		if (this.plugin.settings.ignoreEmbedded && match[0].charAt(0) === '!') return null;
+		if (this.plugin.settings.ignoreEmbedded && slice.charAt(match.index! - 1) === '!') return null;
 
 		return {
 			start: {
