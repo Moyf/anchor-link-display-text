@@ -1,4 +1,9 @@
-import { App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting} from 'obsidian';
+import {App, Editor, EditorPosition, EditorSuggest, EditorSuggestTriggerInfo, Notice, Plugin, PluginSettingTab, Setting} from 'obsidian';
+
+const RE_ANCHOR_NO_DISPLAY = /!?\[\[([^\]]+#[^|\n\r\]]+)\]\]$/;
+const RE_ANCHOR_DISPLAY = /!?(\[\[([^\]]+#[^\n\r\]]+)\]\])$/;
+const RE_DISPLAY = /\|([^\]]+)/;
+
 
 interface AnchorDisplaySuggestion {
 	displayText: string;
@@ -6,7 +11,7 @@ interface AnchorDisplaySuggestion {
 }
 
 interface AnchorDisplayTextSettings {
-	includeNoteName : string;
+	includeNoteName: string;
 	whichHeadings: string;
 	includeNotice: boolean;
 	sep: string;
@@ -43,12 +48,10 @@ export default class AnchorDisplayText extends Plugin {
 				const cursor = editor.getCursor();
 				const currentLine = editor.getLine(cursor.line);
 				const lastChars = currentLine.slice(cursor.ch - 2, cursor.ch);
-				if (lastChars !== ']]') {
-					return
-				}
+				if (lastChars !== ']]') return;
 				
 				// match anchor links WITHOUT an already defined display text
-				const match = currentLine.slice(0, cursor.ch).match(/!{0,1}\[\[([^\]]+#[^|\n\r\]]+)\]\]$/);
+				const match = currentLine.slice(0, cursor.ch).match(RE_ANCHOR_NO_DISPLAY);
 				if (match) {
 					// optionally ignore embedded links
 					if (this.settings.ignoreEmbedded && match[0].charAt(0) === '!') return;
@@ -80,7 +83,7 @@ export default class AnchorDisplayText extends Plugin {
 					// change the display text of the link
 					editor.replaceRange(`|${displayText}`, {line: cursor.line, ch: startIndex}, undefined, 'headerDisplayText');
 					if (this.settings.includeNotice) {
-						new Notice (`Updated anchor link display text.`);
+						new Notice(`Updated anchor link display text.`);
 					}
 				}
 			})
@@ -126,7 +129,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		if (lastChars !== ']]') return null;
 
 		// match anchor link even if it has display text
-		const match = currentLine.slice(0, cursor.ch).match(/!{0,1}(\[\[([^\]]+#[^\n\r\]]+)\]\])$/);
+		const match = currentLine.slice(0, cursor.ch).match(RE_ANCHOR_DISPLAY);
 
 		if (!match) return null;
 		// optionally ignore embedded links
@@ -143,7 +146,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 			},
 			query: match[2],
 		};
-	};
+	}
 
 	getSuggestions(context: EditorSuggestTriggerInfo): AnchorDisplaySuggestion[] {
 		// don't include existing display text in headings
@@ -172,7 +175,7 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 			source: 'Heading(s) and than note name',
 		}
 		return [suggestion1, suggestion2, suggestion3];
-	};
+	}
 
 	renderSuggestion(value: AnchorDisplaySuggestion, el: HTMLElement) {
 		// prompt instructions are a child of the suggestion container, which will
@@ -193,19 +196,18 @@ class AnchorDisplaySuggest extends EditorSuggest<AnchorDisplaySuggestion> {
 		const suggestionContentEl = el.createDiv({cls: 'suggestion-content'});
 		suggestionContentEl.createDiv({cls: 'suggestion-title', text: value.displayText});
 		suggestionContentEl.createDiv({cls: 'suggestion-note', text: value.source});
-	};
+	}
 
 	selectSuggestion(value: AnchorDisplaySuggestion, evt: MouseEvent | KeyboardEvent): void {
 		const editor = this.context!.editor;
 		// if there is already display text, will need to overwrite it
-		const displayTextPattern = /\|([^\]]+)/;
-		const match = this.context!.query.match(displayTextPattern);
+		const match = this.context!.query.match(RE_DISPLAY);
 		if (match) {
 			this.context!.start.ch = this.context!.start.ch - match[0].length;
 		}
 		editor.replaceRange(`|${value.displayText}`, this.context!.start, this.context!.end, 'headerDisplayText');
 		this.suggestionSelected = this.context!.end;
-	};
+	}
 }
 
 class AnchorDisplayTextSettingTab extends PluginSettingTab {
